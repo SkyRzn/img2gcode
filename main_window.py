@@ -26,23 +26,24 @@ class MainWindow(QMainWindow):
 	def fileOpen(self):
 		fileDialog = QFileDialog(self, self.tr('Open image'))
 		fileDialog.setNameFilter(self.tr('Images (*.png *.bmp *.jpg)'))
-		if not fileDialog.exec_():
-			return
+		#if not fileDialog.exec_():
+			#return
 
 		filename = fileDialog.selectedFiles()[0]
 
+		filename = '1.png'
 		#imageDialog = OpenImageDialog('/home/sky/IMG_18082014_102838.png', self)
 		#imageDialog = OpenImageDialog('/home/sky/6ZaxbTIkbl8.jpg', self)
 		imageDialog = OpenImageDialog(filename, self)
 		if imageDialog.exec_():
-			self.data = imageDialog.result()
-			height, width = self.data.shape
-			self.image = QImage(self.data.data, width, height, QImage.Format_Indexed8)
+			self.image = imageDialog.result()
 			self.ui.view.setPixmap(QPixmap.fromImage(self.image))
 
-			pixChunks = getPixelChunks(self.data)
+			w = self.image.width()
+			h = self.image.height()
 
-			h, w = self.data.shape
+			pixChunks = getPixelChunks(self.image)
+
 			res = get_gcode(pixChunks, w, h)
 
 			t = 0

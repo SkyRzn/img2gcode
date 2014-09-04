@@ -21,13 +21,7 @@ class OpenImageDialog(QDialog):
 		width = self.srcImage.width()
 		height = self.srcImage.height()
 
-		ptr = self.srcImage.constBits()
-		ptr.setsize(self.srcImage.byteCount())
-		self.srcData = np.array(ptr).reshape(height, width, 4)
-
-
-		self.data = np.empty((height, width), np.uint8)
-		self.viewImage = QImage(self.data.data, width, height, QImage.Format_Indexed8)
+		self.viewImage = QImage(width, height, QImage.Format_RGB32)
 
 		self.ui.view.setFixedSize(self.srcImage.size())
 
@@ -35,40 +29,44 @@ class OpenImageDialog(QDialog):
 		self.ui.invertedCheckBox.toggled.connect(self.changeImage)
 		self.ui.thresholdSlider.setValue(127)
 
-
 	def thresholdChanged(self, value):
 		changeImage()
-
 
 	def changeImage(self):
 		threshold = self.ui.thresholdSlider.value()
 		inverted = self.ui.invertedCheckBox.isChecked()
 		closeThreads()
 		self.ui.progress.setEnabled(True)
-		self.changeImage_(threshold, inverted, self.srcImage, thr_start = True)
+		self.changeImage_(threshold, inverted, self.srcImage, self.viewImage, thr_start = True)
 
 
 	@SimpleThread
-	def changeImage_(self, threshold, inverted, image):
-		data = self.data
-		h, w = data.shape
-		src = self.srcData
+	def changeImage_(self, threshold, inverted, src, dst):
+		width = src.width()
+		height = src.height()
+
+		ccol = QColor(Qt.white)
 
 		self.setProgress(0, thr_method = 'q')
-		self.setProgressMax(h, thr_method = 'q')
+		self.setProgressMax(height, thr_method = 'q')
 
-		t = time()
-		for y in xrange(h):
+		for y in xrange(height):
 			self.setProgress(y, thr_method = 'q')
-			for x in xrange(w):
+			for x in xrange(width):
 				if self.thr_stopFlag:
 					return
 
-				val = QColor(image.pixel(x, y)).value()
-				if val > threshold:
-					data[y][x] = 0x00 if inverted else 0xff
+				col = QColor(src.pixel(x, y))
+
+				if col.value() > threshold:
+					val = 0x00 if inverted else 0xff
 				else:
-					data[y][x] = 0xff if inverted else 0x00
+					val = 0xff if inverted else 0x00
+
+				col.setRed(val)
+				col.setGreen(val)
+				col.setBlue(val)
+				dst.setPixel(x, y, col.rgb())
 
 		self.imageChanged(thr_method = 'q')
 
@@ -84,4 +82,4 @@ class OpenImageDialog(QDialog):
 		self.ui.progress.setValue(value)
 
 	def result(self):
-		return self.data
+		return self.viewImage

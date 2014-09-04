@@ -24,8 +24,9 @@ yPretensioning = 0.7
 
 
 
-def getPixelChunks(data):
-	h, w = data.shape
+def getPixelChunks(image):
+	w = image.width()
+	h = image.height()
 	rh = h * 0.1
 
 	chains = []
@@ -33,11 +34,11 @@ def getPixelChunks(data):
 	for y in xrange(h):
 		beg = None
 		for x in xrange(w):
-			if data[y][x] == 0:
+			if image.pixel(x, y) == Qt.black:
 				if beg == None:
 					beg = x
 				end = x
-				data[y][x] = 0x88
+				image.setPixel(x, y, Qt.blue)
 			else:
 				if beg != None:
 					chains.append((y, beg, end))
@@ -65,8 +66,8 @@ def moveTime(x0, y0, x1, y1, speed):
 def get_gcode(pixChains, w, h):
 	chunks = []
 
-	chunks.append('G21; Metric system', None)
-	chunks.append('G90; absolute coords', None)
+	chunks.append(('G21; Metric system', None))
+	chunks.append(('G90; absolute coords', None))
 
 	curX = 0
 	curY = 0
