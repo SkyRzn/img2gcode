@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'open_file.ui'
 #
-# Created: Sun Sep  7 16:50:07 2014
+# Created: Sun Sep  7 22:55:45 2014
 #      by: PyQt4 UI code generator 4.10.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -35,7 +35,7 @@ class Ui_Dialog(object):
         self.buttonBox.setObjectName(_fromUtf8("buttonBox"))
         self.gridLayout_2.addWidget(self.buttonBox, 3, 1, 1, 1)
         self.progress = QtGui.QProgressBar(Dialog)
-        self.progress.setMaximum(100000)
+        self.progress.setMaximum(100)
         self.progress.setProperty("value", 24)
         self.progress.setObjectName(_fromUtf8("progress"))
         self.gridLayout_2.addWidget(self.progress, 3, 0, 1, 1)

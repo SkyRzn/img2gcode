@@ -4,21 +4,22 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 import re
-from routines.simple_thread import SimpleThread, closeThreads
+from routines.simple_thread import SimpleThread
+from abstract_loader import AbstractLoader
 
 
-class GerberLoader(QObject):
-	def __init__(self, parent = None):
-		QObject.__init__(self, parent)
-
-	def parse(self, filename):
+class GerberLoader(AbstractLoader):
+	def _load(self, filename):
 		self._init()
-
-		if not self._loadFile(filename):
+		
+		f = open(filename, 'r')
+		if not f:
 			return False
-
-		return self._parse()
-
+		self._gerber = f.readlines()
+		f.close()
+		
+		return bool(self._gerber)
+	
 	def _init(self):
 		self.gerber = []
 		self.comments = []
@@ -32,25 +33,16 @@ class GerberLoader(QObject):
 		self.rect = None
 		self.visible = True
 
-	def _loadFile(self, filename):
-		f = open(filename, 'r')
-		if not f:
-			return False
-		self.gerber = f.readlines()
-		f.close()
-		if not self.gerber:
-			self.gerber = []
-			return False
-		return True
-
 	@SimpleThread
-	def _parse(self):
+	def _run(self, resolution):
+		
 
+	def parse_gerber(self):
 		aperture = None
 		path = []
 		D = None
 		x = y = 0
-		for row in self.gerber:
+		for row in self._gerber:
 			row = row.strip()
 			row = row.strip('*')
 
@@ -139,13 +131,105 @@ class GerberLoader(QObject):
 			self.visible = True
 		elif row == 'LPC':
 			self.visible = False
-			
 
 	def convertCoord(self, x):
 		x = float(x)/pow(10, self.xFormat[1])
 		if self.measurementSystem:
 			x *= 25.4
 		return x
+
+	def rasterize(self, resolution):
+		#self.g = Gerber()
+		#self.g.parse('hum_press.gbr')
+
+		#rrr = 20
+
+		#w = (self.g.width()+10)*rrr
+		#h = (self.g.height()+10)*rrr
+
+		#im = QImage(int(w), int(h), QImage.Format_RGB32)
+		#im.fill(Qt.white)
+
+		#p = QPainter(im)
+		#pen = QPen()
+		#pen.setColor(Qt.black)
+		#p.setPen(pen)
+		#brush = QBrush(Qt.NoBrush)
+		#brush.setColor(Qt.black)
+		#p.setBrush(brush)
+
+		#offs = self.g.offset()
+		#offs = (offs[0]-5, offs[1]-5)
+
+		#point = QPointF()
+		#for path in self.g.paths:
+			#code, apertureCode, visible, coords = path
+			#if code in (1, 3):
+				#aperture = self.g.apertures[apertureCode]
+				#aptype, sizes = aperture
+			##print sizes[0]*rrr
+
+			#if code == 1:
+				#if aptype == 'C':
+					#pen.setWidth(sizes[0]*rrr)
+					#pen.setCapStyle(Qt.RoundCap)
+					#p.setPen(pen)
+					#brush.setStyle(Qt.NoBrush)
+					#p.setBrush(brush)
+				#qpath = QPainterPath(point)
+
+			#for x, y in coords:
+				#x = int((x-offs[0])*rrr)
+				#y = h - int((y-offs[1])*rrr)
+				#point = QPointF(x, y)
+				#if code == 1:
+					#qpath.lineTo(x, y)
+				#elif code == 3:
+					#if visible:
+						#pen.setColor(Qt.black)
+						#brush.setColor(Qt.black)
+					#else:
+						#pen.setColor(Qt.white)
+						#brush.setColor(Qt.white)
+					#pen.setWidth(1)
+					#p.setPen(pen)
+					#brush.setStyle(Qt.SolidPattern)
+					#p.setBrush(brush)
+
+					#if aptype == 'C':
+						#p.drawEllipse(QPointF(x, y), sizes[0]*rrr/2, sizes[0]*rrr/2)
+					#elif aptype == 'R':
+						#ww = sizes[0]*rrr
+						#hh = sizes[1]*rrr
+						#rect = QRectF(x - ww/2, y - hh/2, ww, hh)
+
+						#p.drawRect(rect)
+
+
+			#if code == 1:
+				#p.drawPath(qpath)
+
+
+		#w = im.width()
+		#h = im.height()
+
+		#pixChunks = getPixelChunks(im)
+		#res = get_gcode(pixChunks, w, h)
+		
+		#gcode = []
+		
+		#tt = 0
+		#for g, pix, t in res:
+			#gcode.append(g)
+			#tt += t
+		#print 'Time = %d, width = %.2f, height = %.2f' % (tt, w*0.05, h*0.05)
+		#gcode = '\n'.join(gcode)
+		#f = open('hum_press.gcode', 'w')
+		#f.write(gcode)
+		#f.close()
+
+		#self.ui.view.setPixmap(QPixmap.fromImage(im))
+	
 
 	def width(self):
 		return self.rect[2] - self.rect[0]
