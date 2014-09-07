@@ -26,8 +26,9 @@ class Gerber:
 		self.yFormat = (0, 0)
 		self.measurementSystem = 0 # 0 - mm, 1 - inch
 		self.apertures = {}
-		self.paths = [] # (aperture, [(x,y), ...])
+		self.paths = [] # (D-code, aperture, visible, [(x,y), ...])
 		self.rect = None
+		self.visible = True
 
 	def _loadFile(self, filename):
 		f = open(filename, 'r')
@@ -45,6 +46,7 @@ class Gerber:
 		aperture = None
 		path = []
 		D = None
+		x = y = 0
 		for row in self.gerber:
 			row = row.strip()
 			row = row.strip('*')
@@ -56,24 +58,28 @@ class Gerber:
 				continue
 			elif row.startswith('G54'): # select aperture
 				if path:
-					self.paths.append((D, aperture, path))
+					self.paths.append((D, aperture, self.visible, path))
 					path = []
 				r = re.search('D([0-9]+)', row)
 				aperture = int(r.groups()[0])
-			elif row.startswith('X'):
-				r = re.search('X(?P<x>[\+\-0-9]+)Y(?P<y>[\+\-0-9]+)D(?P<d>[0-9]+)', row)
-				x, y = self.convertCoords(r.groupdict()['x'], r.groupdict()['y'])
-				d = int(r.groupdict()['d'])
+			elif row.startswith('X') or row.startswith('Y'):
+				xx = self._getValue(row, 'X')
+				if xx != None:
+					x = self.convertCoord(xx)
+				yy = self._getValue(row, 'Y')
+				if yy != None:
+					y = self.convertCoord(yy)
+				d = self._getValue(row, 'D')
 				if d != D:
 					if path:
-						self.paths.append((D, aperture, path))
+						self.paths.append((D, aperture, self.visible, path))
 					path = []
 					D = d
 
 				path.append((x, y))
 
 				if D == 3:
-					self.paths.append((D, aperture, path))
+					self.paths.append((D, aperture, self.visible, path))
 					path = []
 
 				if self.rect == None:
@@ -84,9 +90,19 @@ class Gerber:
 								max(y, self.rect[2]),
 								max(y, self.rect[3]))
 		if path:
-			self.paths.append((D, aperture, path))
+			self.paths.append((D, aperture, self.visible, path))
 
 		return True
+	
+	def _getValue(self, row, code):
+		r = re.search('%s[\+\-0-9]+' % (code), row)
+		if not r:
+			return None
+		try:
+			val = int(r.group()[1:])
+		except:
+			return None
+		return val
 
 	def _parseHeaderRow(self, row):
 		row = row.strip('%%*')
@@ -116,39 +132,17 @@ class Gerber:
 						val *= 25.4
 					aperture[1].append(val)
 			self.apertures[int(code)] = aperture
+		elif row == 'LPD':
+			self.visible = True
+		elif row == 'LPC':
+			self.visible = False
+			
 
-	def convertCoords(self, sx, sy):
-		xneg = (sx[0] == '-')
-		yneg = (sy[0] == '-')
-		sx = sx.strip('+-')
-		sy = sy.strip('+-')
-
-		lx = sum(self.xFormat)
-		ly = sum(self.yFormat)
-		if self.zeros == 'L':
-			sx = sx.rjust(lx, '0')
-			sy = sy.rjust(ly, '0')
-		elif self.zeros == 'T':
-			sx = sx.ljust(lx, '0')
-			sy = sy.ljust(ly, '0')
-
-		if self.zeros != 'D':
-			sx = sx[:self.xFormat[0]] + '.' + sx[self.xFormat[0]:]
-			sy = sy[:self.yFormat[0]] + '.' + sy[self.yFormat[0]:]
-
-		x = float(sx)
-		if xneg:
-			x = -x
-		y = float(sy)
-		if yneg:
-			y = -y
-
+	def convertCoord(self, x):
+		x = float(x)/pow(10, self.xFormat[1])
 		if self.measurementSystem:
-			print '!!!!!!!!!!!!!'
 			x *= 25.4
-			y *= 25.4
-
-		return (x, y)
+		return x
 
 	def width(self):
 		return self.rect[2] - self.rect[0]

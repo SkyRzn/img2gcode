@@ -7,17 +7,17 @@ from routines.simple_thread import SimpleThread, closeThreads
 import math
 
 
-resolution = 0.1
+resolution = 0.05
 gap = 0.5
 yInverted = False
 laserOn = 'M106'
 laserOff = 'M107'
 burnSpeed = 300 #mm/min
-idleSpeed = 3000 #mm/min
+idleSpeed = 5000 #mm/min
 
-firstPointBurnWait = 0.2 #sec
-lastPointBurnWait = 0.1 #sec
-lastPointFadeWait = 0.1 #sec
+firstPointBurnWait = 0.1 #sec
+lastPointBurnWait = 0.05 #sec
+lastPointFadeWait = 0.05 #sec
 
 xPretensioning = 0.7
 yPretensioning = 0.7
@@ -34,7 +34,7 @@ def getPixelChunks(image):
 	for y in xrange(h):
 		beg = None
 		for x in xrange(w):
-			if image.pixel(x, y) == Qt.black:
+			if QColor(image.pixel(x, y)).value() == 0:
 				if beg == None:
 					beg = x
 				end = x
@@ -66,11 +66,18 @@ def moveTime(x0, y0, x1, y1, speed):
 def get_gcode(pixChains, w, h):
 	chunks = []
 
-	chunks.append(('G21; Metric system', None))
-	chunks.append(('G90; absolute coords', None))
+	chunks.append(('G21; Metric system', None, 0))
+	chunks.append(('G90; absolute coords', None, 0))
+	chunks.append(('G92 X0 Y0; set position', None, 0))
+	chunks.append((laserOff, None, 0))
 
 	curX = 0
 	curY = 0
+	
+	y, beg, end = pixChains[0]
+	ry, rbeg, rend = pic2real(y, beg, end, w, h)
+	if yPretensioning > 0:
+		chunks.append(('G00 X%.3f Y%.3f F%d' % (rbeg, ry+yPretensioning, idleSpeed), None, 0))
 
 	for y, beg, end in pixChains:
 		ry, rbeg, rend = pic2real(y, beg, end, w, h)
@@ -101,11 +108,13 @@ def get_gcode(pixChains, w, h):
 		gcode.append('G04 P%d' % (lastPointFadeWait*1000,))
 		t += lastPointFadeWait/60
 
-		gcode = '\n'.gcode
+		gcode = '\n'.join(gcode)
 
 		chunks.append((gcode, (y, beg, end), t))
 
 		curX, curY = rend, ry
+		
+	chunks.append(('M0', None, 0))
 	return chunks
 
 
