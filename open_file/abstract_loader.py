@@ -12,8 +12,7 @@ class AbstractLoader(QObject):
 	
 	def __init__(self, parent = None):
 		QObject.__init__(self, parent)
-		self.progress.emit(111)
-		
+
 	def load(self, filename):
 		self.stop()
 		self._load(filename)

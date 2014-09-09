@@ -24,34 +24,43 @@ class OpenFileDialog(QDialog):
 		
 		if fileExt == 'gbr':
 			self.ui.imageBox.setVisible(False)
+			self._loader = GerberLoader(self)
 		elif fileExt in ['png', 'bmp', 'jpg']:
 			self.ui.gerberBox.setVisible(False)
 			self._loader = ImageLoader(self)
-			if not self._loader.load(filename):
-				self.close() #FIXME
-				
-			self.ui.thresholdSlider.setValue(127)
-			
+
+		if not self._loader.load(filename):
+			self.close() #FIXME
+
 		self._loader.progress.connect(self.ui.progress.setValue)
 		self._loader.loaded.connect(self._loaded)
 
+		if fileExt == 'gbr':
+			self.redraw()
+		else:
+			self.ui.thresholdSlider.setValue(127)
+
 	def redraw(self):
 		self._loader.stop()
-		
-		if type(self._loader) == ImageLoader:
-			threshold = self.ui.thresholdSlider.value()
-			inverted = self.ui.invertedCheckBox.isChecked()
-			
+
 		self.ui.progress.setValue(0)
 		self.ui.progress.setEnabled(True)
-		
-		self._loader.run((threshold, inverted))
+
+		if type(self._loader) == GerberLoader:
+			self._loader.run(0.05)
+		else:
+			threshold = self.ui.thresholdSlider.value()
+			inverted = self.ui.invertedCheckBox.isChecked()
+			self._loader.run((threshold, inverted))
 		
 	def _loaded(self, image):
+		self.ui.progress.setValue(0)
+		self.ui.progress.setEnabled(False)
+
 		self._image = image
 		self.ui.view.setFixedSize(image.size())
 		self.ui.view.setPixmap(QPixmap.fromImage(image))
-		
+
 		
 	def image(self):
 		return self._image

@@ -34,8 +34,7 @@ class MainWindow(QMainWindow):
 
 		#filename = fileDialog.selectedFiles()[0]
 
-		filename = 'hum_press.gbr'
-		filename = 'putin_vor.png'
+		filename = '2_1.gbr'
 		fileDialog = OpenFileDialog(filename, self)
 		if fileDialog.exec_():
 			self.image = fileDialog.image()

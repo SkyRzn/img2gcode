@@ -21,9 +21,7 @@ class ImageLoader(AbstractLoader):
 		dst = QImage(width, height, QImage.Format_RGB32)
 
 		ccol = QColor(Qt.white)
-
 		for y in xrange(height):
-			self.emit(SIGNAL('progress'), y*100/height)
 			for x in xrange(width):
 				if self.thr_stopFlag:
 					return
@@ -40,12 +38,17 @@ class ImageLoader(AbstractLoader):
 				col.setBlue(val)
 				dst.setPixel(x, y, col.rgb())
 
+			self._progress(y*100/height, thr_method = 'q')
+
 		self._loaded(dst, thr_method = 'q')
 		
+	def _progress(self, val):
+		self.progress.emit(val)
+
 	def _loaded(self, image):
 		self.loaded.emit(image)
-	
-	
+
+
 	
 
 
