@@ -6,6 +6,7 @@ from PyQt4.QtGui import *
 from gerber_parser import GerberParser
 from routines.simple_thread import SimpleThread
 from abstract_loader import AbstractLoader
+import math
 
 
 class GerberLoader(AbstractLoader):
@@ -57,11 +58,11 @@ class GerberLoader(AbstractLoader):
 			code, value = row
 
 			if aperture:
-				aptype, sizes = aperture
+				aptype, apdata = aperture
 
 			if code == 'C':
-				x = int((value[0] - offs[0]) / resolution)
-				y = height - int((value[1] - offs[1]) / resolution)
+				x = (value[0] - offs[0]) / resolution
+				y = height - (value[1] - offs[1]) / resolution
 				point = QPointF(x, y)
 
 			elif code == 'V':
@@ -70,7 +71,7 @@ class GerberLoader(AbstractLoader):
 
 			elif code == 'D':
 				if value == 1 and aperture:
-					pen.setWidth(sizes[0] / resolution)
+					pen.setWidth(apdata[0] / resolution)
 					pen.setCapStyle(Qt.RoundCap if aptype == 'C' else Qt.SquareCap)
 					p.setPen(pen)
 
@@ -86,13 +87,26 @@ class GerberLoader(AbstractLoader):
 					brush.setStyle(Qt.SolidPattern)
 					p.setBrush(brush)
 
-					w = sizes[0] / resolution / 2
-					h = sizes[1] / resolution / 2 if len(sizes) > 1 else 0
+					if aptype in ('C', 'R', 'P'):
+						w = apdata[0] / resolution / 2
+						h = apdata[1] / resolution / 2 if len(apdata) > 1 else 0
 
 					if aptype == 'C':
 						p.drawEllipse(QPointF(x, y), w, w)
 					elif aptype == 'R':
 						p.drawRect(QRectF(x - w, y - h, w * 2, h * 2))
+					elif aptype == 'P':
+						p.drawEllipse(QPointF(x, y), w, w)
+						#self.drawNSidePolygon(p, QPointF(x, y), w, w)
+					elif aptype == 'M':
+						code, rect, coords = apdata
+						if code == 4:
+							mpoints = []
+							for mx, my in coords:
+								mx = mx / resolution
+								my = -my / resolution
+								mpoints.append(QPointF(x + mx, y + my))
+							p.drawPolygon(*mpoints)
 
 				if value > 3:
 					aperture = self._parser.aperture(value)
@@ -105,11 +119,23 @@ class GerberLoader(AbstractLoader):
 
 		self._loaded(im, thr_method = 'q')
 
+	def drawNSidePolygon(self, painter, size, rotation, offset):
+		n = len(coords)
+		brush.setColor(Qt.red)
+		p.setBrush(brush)
+		points = []
+		for i, coord in enumerate(coords):
+			x = math.sin((i/n + rotation/360.0) * 2 * math.pi) * size + offset[0]
+			y = math.cos((i/n + rotation/360.0) * 2 * math.pi) * size + offset[1]
+			points.append(QPointF(x, y))
+		p.drawPolygon(*points)
+		brush.setColor(Qt.black)
+		p.setBrush(brush)
+
 	def _progress(self, val):
 		self.progress.emit(val)
 
 	def _loaded(self, image):
-		print '----------------'
 		self.loaded.emit(image)
 
 	def width(self):

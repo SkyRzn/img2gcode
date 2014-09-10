@@ -74,7 +74,7 @@ class GerberParser(QObject):
 			else:
 				self.rect = (min(x - apSize, self.rect[0]),
 							min(y - apSize, self.rect[1]),
-							max(y + apSize, self.rect[2]),
+							max(x + apSize, self.rect[2]),
 							max(y + apSize, self.rect[3]))
 			parent._progress(i*50/rowCount, thr_method = 'q')
 
@@ -120,32 +120,56 @@ class GerberParser(QObject):
 				on = int(val.pop(0))
 				count = int(val.pop(0))
 				coords = []
-				for i in range(count):
+				first = True
+				for i in range(count + 1):
 					x = float(val.pop(0))
 					y = float(val.pop(0))
-					coords.append(tuple(x, y))
+					if self.measurementSystem:
+						x *= 25.4
+						y *= 25.4
+					coords.append((x, y))
+					if first:
+						rect = (x, y, x, y)
+						first = False
+					else:
+						rect = (min(x, rect[0]),
+								min(y, rect[1]),
+								max(x, rect[2]),
+								max(y, rect[3]))
+
 				rot = float(val.pop(0))
 				if rot != 0:
-					print 'Polygon rotation do not support'
-
-				self._macroses[name] = (code, coords)
+					print 'Polygon rotation %.2f do not support: "%s"' % (rot, name)
+				self._macroses[name] = (code, rect, coords)
 
 		elif row.startswith('ADD'):
-			r = re.search('ADD(?P<code>[0-9]{1,2})(?P<type>[CR]{1}),(?P<p1>[0-9\.]+)(X(?P<p2>[0-9\.]+)){0,1}(X(?P<p3>[0-9\.]+)){0,1}(X(?P<p4>[0-9\.]+)){0,1}', row)
+			r = re.search('ADD(?P<code>[0-9]{1,2})(?P<type>[CRP]{1}),(?P<p1>[0-9\.]+)(X(?P<p2>[0-9\.]+)){0,1}(X(?P<p3>[0-9\.]+)){0,1}(X(?P<p4>[0-9\.]+)){0,1}', row)
 			if not r:
-				print 'Apperture parsing error: "%s"' % (row)
-				return
+				r = re.search('ADD(?P<code>[0-9]{1,2})(?P<name>.+)', row)
+				if not r:
+					print 'Apperture parsing error: "%s"' % (row)
+					return
+
 			data = r.groupdict()
 			code = data['code']
-			aperture = (data['type'], [])
+			name = data.get('name')
+			macros = None
+			if name:
+				macros = self._macroses.get(name)
+				if not macros:
+					print 'Apperture macros "%s" not found' % (name)
+					return
+				aperture = ('M', macros)
+			else:
+				aperture = (data['type'], [])
 
-			for i in range(4):
-				val = data['p%d' % (i+1)]
-				if val:
-					val = float(val)
-					if self.measurementSystem:
-						val *= 25.4
-					aperture[1].append(val)
+				for i in range(4):
+					val = data['p%d' % (i+1)]
+					if val:
+						val = float(val)
+						if self.measurementSystem:
+							val *= 25.4
+						aperture[1].append(val)
 			self._apertures[int(code)] = aperture
 		elif row == 'LPD':
 			self._path.append('V', True)
