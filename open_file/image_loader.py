@@ -23,8 +23,6 @@ class ImageLoader(AbstractLoader):
 		ccol = QColor(Qt.white)
 		for y in xrange(height):
 			for x in xrange(width):
-				if self.thr_stopFlag:
-					return
 
 				col = QColor(src.pixel(x, y))
 
@@ -38,6 +36,8 @@ class ImageLoader(AbstractLoader):
 				col.setBlue(val)
 				dst.setPixel(x, y, col.rgb())
 
+			if self.thr_stopFlag:
+				return
 			self._progress(y*100/height, thr_method = 'q')
 
 		self._loaded(dst, thr_method = 'q')

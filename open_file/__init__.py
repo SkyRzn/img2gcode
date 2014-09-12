@@ -6,6 +6,7 @@ from PyQt4.QtGui import *
 from ui_open_file import Ui_Dialog
 from image_loader import ImageLoader
 from gerber_loader import GerberLoader
+from time import time
 
 
 class OpenFileDialog(QDialog):
@@ -46,6 +47,7 @@ class OpenFileDialog(QDialog):
 		self.ui.progress.setValue(0)
 		self.ui.progress.setEnabled(True)
 
+		self.t = time()
 		if type(self._loader) == GerberLoader:
 			self._loader.run(0.05)
 		else:
@@ -54,6 +56,7 @@ class OpenFileDialog(QDialog):
 			self._loader.run((threshold, inverted))
 		
 	def _loaded(self, image):
+		print time() - self.t
 		self.ui.progress.setValue(0)
 		self.ui.progress.setEnabled(False)
 
