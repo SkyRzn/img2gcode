@@ -12,12 +12,12 @@ gap = 0.5
 yInverted = False
 laserOn = 'M106'
 laserOff = 'M107'
-burnSpeed = 300 #mm/min
-idleSpeed = 5000 #mm/min
+burnSpeed = 600 #mm/min
+idleSpeed = 2000 #mm/min
 
-firstPointBurnWait = 0.1 #sec
-lastPointBurnWait = 0.05 #sec
-lastPointFadeWait = 0.05 #sec
+firstPointBurnWait = 0.01 #sec
+lastPointBurnWait = 0.001 #sec
+lastPointFadeWait = 0.001 #sec
 
 xPretensioning = 0.7
 yPretensioning = 0.7

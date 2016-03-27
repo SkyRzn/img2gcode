@@ -54,48 +54,52 @@ class MainWindow(QMainWindow):
 		fileDialog = QFileDialog(self, self.tr('Open file'))
 		fileDialog.setNameFilters([self.tr('Gerber (*.gbr)'),
 									self.tr('Image (*.png *.bmp *.jpg)')])
-		#if not fileDialog.exec_():
-			#return
+		if not fileDialog.exec_():
+			return
 
-		#filename = fileDialog.selectedFiles()[0]
+		filename = fileDialog.selectedFiles()[0]
 
-		filename = 'bot_layer.png'
-		filename = '1.gbr'
-		#fileDialog = OpenFileDialog(filename, self)
-		#if fileDialog.exec_():
-			#self.image = fileDialog.image()
-			#self.ui.view.setPixmap(QPixmap.fromImage(self.image))
-			#self.setState(STATE_LOADED)
+		fileDialog = OpenFileDialog(filename, self)
+		if fileDialog.exec_():
+			self.image = fileDialog.image()
+			self.ui.view.setPixmap(QPixmap.fromImage(self.image))
+			self.setState(STATE_LOADED)
 
 	def build(self):
 		self.progress = QProgressDialog(self) #.tr('Building'), self.tr('Cancel'))
 		self.progress.setRange(0, 100)
 		self.progressSignal.connect(self.progress.setValue)
-		print 111
 		self._build(thr_start = True)
 		self.progress.exec_()
-		print 222
 
 	@SimpleThread
 	def _build(self):
-		self.updatePrtogress(10, thr_method = 'q')
+		self.updateProgress(10, thr_method = 'q')
 		pixChunks = getPixelChunks(self.image)
-		self.updatePrtogress(20, thr_method = 'q')
+		self.updateProgress(20, thr_method = 'q')
 
 		w = self.image.width()
 		h = self.image.height()
 
 		res = get_gcode(pixChunks, w, h)
-		self.updatePrtogress(30, thr_method = 'q')
+		self.updateProgress(30, thr_method = 'q')
 
 		t = 0
+		fres = []
 		for gcode, pix, t1 in res:
 			#print t1, pix, gcode
+			fres.append(gcode)
 			t+= t1
-		print h*0.1, w*0.1, t
-		self.updatePrtogress(100, thr_method = 'q')
+		print h*0.05, w*0.05, t
+		fres = '\n'.join(fres)
+		f = open('res.gcode', 'w')
+		f.write(fres)
+		f.close()
+		
+		
+		self.updateProgress(100, thr_method = 'q')
 
-	def updatePrtogress(self, val):
+	def updateProgress(self, val):
 		self.progressSignal.emit(val)
 
 	def saveSettings(self):

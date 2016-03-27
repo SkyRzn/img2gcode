@@ -10,6 +10,7 @@ from routines.simple_thread import SimpleThread
 class ImageLoader(AbstractLoader):
 	def _load(self, filename):
 		self._srcImage = QImage(filename).convertToFormat(QImage.Format_RGB32)
+		print '!!!', self._srcImage.width(), self._srcImage.height(), filename
 		return bool(self._srcImage)
 
 	@SimpleThread
@@ -39,7 +40,6 @@ class ImageLoader(AbstractLoader):
 			if self.thr_stopFlag:
 				return
 			self._progress(y*100/height, thr_method = 'q')
-
 		self._loaded(dst, thr_method = 'q')
 		
 	def _progress(self, val):

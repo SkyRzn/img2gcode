@@ -172,9 +172,9 @@ class GerberParser(QObject):
 						aperture[1].append(val)
 			self._apertures[int(code)] = aperture
 		elif row == 'LPD':
-			self._path.append('V', True)
+			self._path.append(('V', True))
 		elif row == 'LPC':
-			self._path.append('V', False)
+			self._path.append(('V', False))
 
 	def convertCoord(self, x):
 		x = float(x)/pow(10, self.xFormat[1])
